@@ -32,8 +32,10 @@ export function drawWorld(ctx, world) {
   drawActors(ctx, world);
   drawMarkers(ctx, world);
   drawPlaceLabels(ctx, world);
+  drawThiefTag(ctx, world);
   drawCloseCall(ctx, world);
   drawHeaderStrip(ctx, world);
+  drawMapBanner(ctx, world);
 }
 
 // A small deterministic hash of a tile (and the level it sits in), so the dressing
@@ -683,6 +685,69 @@ function drawCloseCall(ctx, world) {
   ctx.fillText(text, p.x, y + 14.5);
 }
 
+// The thief's own state, worn as a small pill over his hood: HIDDEN when shadow or
+// low cover swallows him, IN LIGHT when a lamp pool has him, IN THE VENTS below the
+// floor. The same truth hud.js tells in words, computed from the same ingredients —
+// tile, stance, neighbouring cover, lamp light — so the two can never disagree.
+function drawThiefTag(ctx, world) {
+  const p = world.player;
+  if (world.invulnT > 0 && Math.floor(world.time * 9) % 2 === 0) return; // thief is blinking out a strike
+  const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE);
+  const tile = tileAt(world.level, tx, ty);
+  let text = null, col = '#57d7c5';
+  if (tile === 'v') { text = 'IN THE VENTS'; col = '#9fb0c8'; }
+  else if (tile === 's') text = 'HIDDEN';
+  else if (p.stance === 'sneak') {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (tileAt(world.level, tx + dx, ty + dy) === '=') { text = 'HIDDEN'; break; }
+    }
+  }
+  if (!text && lightAt(world.lamps, p.x, p.y) > 0.45) { text = 'IN LIGHT'; col = '#ffb454'; }
+  if (!text) return;
+  ctx.font = 'bold 9.5px system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 12;
+  const x = p.x - w / 2, y = p.y - 33;
+  ctx.fillStyle = 'rgba(8,10,16,0.82)';
+  ctx.beginPath(); ctx.roundRect(x, y, w, 15, 4); ctx.fill();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.65;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, p.x, y + 11);
+}
+
+// The abbey's mood, announced across the map itself when it changes: a chase gets a
+// red SPOTTED banner with the only advice that matters, a search gets an amber one.
+// State-driven like the side panel's banner — it stands while the state stands and
+// is gone the frame the abbey calms — and sized to be read at contact-sheet scale.
+function drawMapBanner(ctx, world) {
+  const states = world.guards.map((g) => g.state);
+  let text = null, bg = null, fg = null;
+  if (states.includes('chase')) {
+    text = 'SPOTTED!  Break line of sight and hide.';
+    bg = 'rgba(120,16,8,0.88)'; fg = '#ffd9d2';
+  } else if (states.includes('search')) {
+    text = 'SEARCHING — they sweep the last place they saw you.';
+    bg = 'rgba(122,74,10,0.88)'; fg = '#ffe3b0';
+  }
+  if (!text) return;
+  const W = COLS * TILE;
+  ctx.font = '800 16px system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 34;
+  const x = (W - w) / 2, y = 40;
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.roundRect(x, y, w, 32, 7); ctx.fill();
+  ctx.strokeStyle = fg;
+  ctx.globalAlpha = 0.5;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = fg;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, W / 2, y + 21.5);
+}
+
 // The header strip across the top of the play area: level and objective on the
 // left, and on the right the abbey's sharpest warden meter as a DETECTION bar
 // with its number and a state pill — the same truth the side panel tells, readable
@@ -1040,6 +1105,19 @@ function drawActors(ctx, world) {
 
 function drawMarkers(ctx, world) {
   for (const g of world.guards) {
+    if ((g.state === 'search' || g.state === 'investigate') && g.lastSeen) {
+      // the hunt, drawn as a line: from the warden doing the sweeping to the
+      // spot he is sweeping toward — his last certain sight of the thief
+      ctx.strokeStyle = 'rgba(255,120,90,0.55)';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(g.x, g.y);
+      ctx.lineTo(g.lastSeen.x, g.lastSeen.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1;
+    }
     if (g.state === 'search' && g.lastSeen) {
       const s = g.lastSeen;
       ctx.strokeStyle = 'rgba(255,120,90,0.85)';

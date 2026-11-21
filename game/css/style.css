@@ -74,3 +74,67 @@ canvas { display: block; background: #141a26; }
 .sw.exit { background: #0f3d38; border: 2px solid #57d7c5; }
 
 .controls { color: #9fb0c8; line-height: 1.55; margin: 0; font-size: 12px; }
+
+/* --- the results + campaign screen (the wide card) --- */
+#overlay .card.wide { max-width: 904px; width: 904px; padding: 24px 28px; text-align: left; }
+.results-wrap { display: flex; gap: 28px; }
+.results-main { width: 392px; flex: none; }
+.results-main .esc { font-size: 15px; font-weight: 700; letter-spacing: 0.34em; color: #9fb0c8; }
+.results-main .rank { font-size: 52px; font-weight: 800; letter-spacing: 0.1em; line-height: 1.05; margin: 2px 0 4px; }
+.rank-ghost { color: #57d7c5; }
+.rank-shadow { color: #9adcff; }
+.rank-bruiser { color: #ffb454; }
+.results-main .flavour { margin: 0 0 8px; color: #c3cede; font-style: italic; }
+.results-main .stars { font-size: 25px; letter-spacing: 0.3em; color: #ffd977; margin: 2px 0 12px; }
+.rrow {
+  display: flex; align-items: baseline; gap: 10px; padding: 5px 0;
+  border-bottom: 1px solid rgba(60, 74, 102, 0.3);
+}
+.rrow span { color: #7e8ea8; letter-spacing: 0.14em; font-size: 11px; width: 118px; flex: none; }
+.rrow b { color: #e8eef7; font-size: 17px; }
+.rrow i { color: #7e8ea8; font-style: normal; font-size: 12px; }
+.results-main .rules { color: #7e8ea8; font-size: 12px; line-height: 1.5; margin: 12px 0 14px; }
+.buttons { display: flex; gap: 8px; }
+.btn {
+  padding: 8px 13px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+  background: #1d2a42; border: 1px solid #2c3648; color: #9fb0c8;
+}
+.btn:first-child { background: #c9a44e; border-color: #c9a44e; color: #171106; }
+
+.campaign-chart { flex: 1; border-left: 1px solid rgba(60, 74, 102, 0.35); padding-left: 24px; }
+.campaign-chart h3 { margin: 2px 0 10px; font-size: 12px; letter-spacing: 0.24em; color: #7e8ea8; }
+.crow {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 7px;
+  border: 1px solid #2c3648; border-radius: 7px; background: rgba(19, 26, 40, 0.85);
+}
+.crow .cnum {
+  width: 22px; height: 22px; flex: none; border-radius: 50%; text-align: center; line-height: 22px;
+  background: #232d42; color: #9fb0c8; font-size: 12px; font-weight: 700;
+}
+.crow .cname { flex: 1; font-weight: 600; color: #e8eef7; font-size: 14px; }
+.crow .cstars { color: #ffd977; letter-spacing: 0.18em; font-size: 13px; }
+.crow .crank { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; }
+.crow .cnote { color: #7e8ea8; font-size: 12px; font-style: italic; }
+.crow.done { border-color: rgba(201, 164, 78, 0.55); }
+.crow.done .cnum { background: #c9a44e; color: #171106; }
+.crow.next { opacity: 0.85; border-style: dashed; }
+.crow.locked { opacity: 0.45; }
+.campaign-chart .teaser { color: #9fb0c8; font-size: 12.5px; line-height: 1.5; margin: 10px 2px 0; }
+
+/* --- the title / menu card --- */
+#overlay .card.title-card { max-width: 620px; width: 620px; }
+.title-card .masthead {
+  font-size: 46px; font-weight: 800; letter-spacing: 0.32em; color: #57d7c5;
+  margin: 0 0 2px; text-indent: 0.32em;
+}
+.title-card .premise { font-size: 16.5px; color: #ffca7a; font-weight: 600; margin: 0 0 10px; }
+.title-card .nights { margin: 12px auto 4px; max-width: 470px; text-align: left; }
+.title-card .night {
+  display: flex; align-items: center; gap: 10px; padding: 4.5px 8px;
+  border-bottom: 1px solid rgba(60, 74, 102, 0.25); color: #c3cede; font-size: 13.5px;
+}
+.title-card .night .cnum {
+  width: 20px; height: 20px; flex: none; border-radius: 50%; text-align: center; line-height: 20px;
+  background: #232d42; color: #9fb0c8; font-size: 11px; font-weight: 700;
+}
+.title-card .night i { margin-left: auto; color: #7e8ea8; font-style: italic; font-size: 12px; }

@@ -15,7 +15,7 @@ You are a tide-thief slipping through a drowned abbey on a tidal flat at night. 
 - **Noise**: sneak (Shift) is silent, walking is quiet, sprinting (Space) is loud — your current noise radius is drawn around you. Click to throw a coin and pull a warden off his route.
 - **Scent hounds** (the abbey's signature defence): moving on dry ground drops scent crumbs that fade over ~18 seconds; wading washes the trail away. A hound that crosses a fresh crumb tracks the chain — drawn as a dashed trail — and its bark spikes its handler's detection.
 - **Cameras** sweep their cones and fill an exposure meter; **laser tripwires** pulse, and crossing one while it is lit raises the alarm.
-- A three-segment alarm (QUIET → WARY → ALARM), strikes for being caught, per-level tallies with a GHOST bonus for never being fully spotted, and a five-level campaign with a victory screen.
+- A three-segment alarm (QUIET → WARY → ALARM) and strikes for being caught. Every escape ends on a **results screen**: ESCAPED, with a rank — **GHOST** (never spotted, every piece of loot), **SHADOW** (never spotted) or **BRUISER** (out the loud way) — one to three stars (escaped · never spotted · all loot), your time set against the level's par, and the **campaign chart** of all five nights with the stars and ranks earned so far and the next night's lure. A title screen presents the whole campaign up front; finishing all five nights empties the abbey.
 
 Controls: WASD / arrows move · Shift sneak · Space sprint · E interact · Click throw coin · Esc pause · R retry · M mute.
 

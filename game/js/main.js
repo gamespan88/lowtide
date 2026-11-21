@@ -21,9 +21,32 @@ const campaign = {
   level: 0,
   screen: 'title', // title | play | pause | tally | fail | victory
   totals: { time: 0, loot: 0, lootTotal: 0, spotted: 0, ghostLevels: 0 },
+  results: LEVELS.map(() => null), // per level: { stars, rank, time, spotted, loot, lootTotal, strikes }
   lastTally: null,
 };
 let world = null;
+
+// --- the campaign's ranks -------------------------------------------------------
+// Stars: one for escaping at all, one for never being spotted, one for lifting
+// every piece of loot. The rank names how the escape felt: GHOST took all three
+// stars and every prize without a single sighting; SHADOW was never spotted but
+// left something behind; BRUISER got out the loud way, seen and chased.
+function starsFor(spotted, loot, lootTotal) {
+  return 1 + (spotted === 0 ? 1 : 0) + (loot >= lootTotal ? 1 : 0);
+}
+function rankFor(spotted, loot, lootTotal) {
+  if (spotted === 0 && loot >= lootTotal) return 'GHOST';
+  if (spotted === 0) return 'SHADOW';
+  return 'BRUISER';
+}
+const RANK_LINES = {
+  GHOST: 'Never spotted, nothing missing. The abbey never knew.',
+  SHADOW: 'Never spotted. The wardens will swear the dark itself robbed them.',
+  BRUISER: 'Seen, chased, and gone anyway — the bells are still ringing.',
+};
+function starRow(stars) {
+  return '★'.repeat(stars) + '☆'.repeat(3 - stars);
+}
 
 function showOverlay(html) {
   overlay.innerHTML = html;
@@ -41,27 +64,74 @@ function startLevel(i) {
   hud.update(world);
 }
 
-function tally() {
-  const ghost = world.spotted === 0;
-  campaign.lastTally = {
-    name: world.def.name, time: world.time, loot: world.lootTaken(), lootTotal: world.loot.length,
-    spotted: world.spotted, strikes: world.strikes, ghost,
+// Record the finished level's result in the campaign — the single place results
+// are born, so a real escape and the staged screenshot go through the same hands.
+function recordResult() {
+  const loot = world.lootTaken(), lootTotal = world.loot.length;
+  const result = {
+    stars: starsFor(world.spotted, loot, lootTotal),
+    rank: rankFor(world.spotted, loot, lootTotal),
+    time: world.time, spotted: world.spotted,
+    loot, lootTotal, strikes: world.strikes,
   };
+  campaign.results[campaign.level] = result;
+  campaign.lastTally = { name: world.def.name, ...result, ghost: world.spotted === 0 };
   campaign.totals.time += world.time;
-  campaign.totals.loot += world.lootTaken();
-  campaign.totals.lootTotal += world.loot.length;
+  campaign.totals.loot += loot;
+  campaign.totals.lootTotal += lootTotal;
   campaign.totals.spotted += world.spotted;
-  if (ghost) campaign.totals.ghostLevels++;
-  campaign.screen = 'tally';
+  if (world.spotted === 0) campaign.totals.ghostLevels++;
+  return result;
+}
+
+// The results screen: this level's verdict on the left — ESCAPED, the rank in
+// large type, the tally rows, the buttons — and the whole campaign chart on the
+// right, five nights with their stars and ranks, and the next night's lure.
+function resultsHTML() {
   const t = campaign.lastTally;
-  showOverlay(`
-    <div class="card">
-      <h2>${t.name} — cleared</h2>
-      <p class="tally">Time <b>${hud.fmtTime(t.time)}</b> · Loot <b>${t.loot}/${t.lootTotal}</b> ·
-      Spotted <b>${t.spotted}</b> · Strikes <b>${t.strikes}</b></p>
-      ${t.ghost ? '<p class="ghost">GHOST — never fully spotted. The abbey never knew.</p>' : ''}
-      <p class="prompt">${campaign.level + 1 < LEVELS.length ? 'Press Enter — the tide turns to the next ruin.' : 'Press Enter — the last ruin.'}</p>
-    </div>`);
+  const last = campaign.level + 1 >= LEVELS.length;
+  const rows = LEVELS.map((lv, i) => {
+    const r = campaign.results[i];
+    if (r) {
+      return `<div class="crow done"><span class="cnum">${i + 1}</span><span class="cname">${lv.name}</span>` +
+        `<span class="cstars">${starRow(r.stars)}</span><span class="crank rank-${r.rank.toLowerCase()}">${r.rank}</span></div>`;
+    }
+    const next = campaign.results.findIndex((x) => !x) === i;
+    return `<div class="crow ${next ? 'next' : 'locked'}"><span class="cnum">${i + 1}</span><span class="cname">${lv.name}</span>` +
+      `<span class="cnote">${next ? 'Not yet escaped' : '—'}</span></div>`;
+  }).join('');
+  const nextIdx = campaign.results.findIndex((x) => !x);
+  const teaser = nextIdx >= 0
+    ? `<p class="teaser">Next: ${LEVELS[nextIdx].teaser}</p>`
+    : '<p class="teaser">The Tide Pearl rides the ebb out of the drowned abbey, and no bell remembers you.</p>';
+  return `
+    <div class="card wide">
+      <div class="results-wrap">
+        <div class="results-main">
+          <div class="esc">ESCAPED</div>
+          <div class="rank rank-${t.rank.toLowerCase()}">${t.rank}</div>
+          <p class="flavour">${RANK_LINES[t.rank]}</p>
+          <div class="stars">${starRow(t.stars)}</div>
+          <div class="rrow"><span>TIME</span><b>${hud.fmtTime(t.time)}</b><i>par ${hud.fmtTime(LEVELS[campaign.level].par)}</i></div>
+          <div class="rrow"><span>TIMES SPOTTED</span><b>${t.spotted}</b><i></i></div>
+          <div class="rrow"><span>LOOT</span><b>${t.loot} / ${t.lootTotal}</b><i></i></div>
+          <div class="rrow"><span>STRIKES</span><b>${t.strikes}</b><i></i></div>
+          <p class="rules">★ escaped · ★ never spotted · ★ every piece of loot.<br>GHOST takes all three, unseen, with nothing left behind.</p>
+          <div class="buttons"><span class="btn">${last ? 'FINISH ⏎' : 'NEXT NIGHT ⏎'}</span><span class="btn">RETRY · R</span><span class="btn">MENU · ESC</span></div>
+        </div>
+        <div class="campaign-chart">
+          <h3>CAMPAIGN — FIVE NIGHTS</h3>
+          ${rows}
+          ${teaser}
+        </div>
+      </div>
+    </div>`;
+}
+
+function tally() {
+  recordResult();
+  campaign.screen = 'tally';
+  showOverlay(resultsHTML());
 }
 
 function victory() {
@@ -89,15 +159,26 @@ function fail() {
 
 function title() {
   campaign.screen = 'title';
+  // arriving at the menu starts a fresh campaign, and the flooded cloister
+  // stands behind the card, dimmed — the abbey the menu is promising
+  campaign.results = LEVELS.map(() => null);
+  campaign.totals = { time: 0, loot: 0, lootTotal: 0, spotted: 0, ghostLevels: 0 };
+  campaign.lastTally = null;
+  if (!world) world = new World(1, sound);
+  const nights = LEVELS.map((lv, i) =>
+    `<div class="night"><span class="cnum">${i + 1}</span><span>${lv.name}</span><i>${lv.prize}</i></div>`).join('');
   showOverlay(`
-    <div class="card">
-      <h2>LOWTIDE</h2>
-      <p>A drowned abbey on a tidal flat, five flooded ruins, one thief. Steal each level's
-      prize and reach the EXIT unseen — mind the lantern cones, the lamp light, your own
-      noise, and the scent hounds that follow your trail across dry stone.</p>
+    <div class="card title-card">
+      <div class="masthead">LOWTIDE</div>
+      <p class="premise">Five nights in the drowned abbey — steal the Tide Pearl.</p>
+      <p>A tide-thief slips through five flooded ruins at night: lantern wardens on
+      learnable patrols, scent hounds on the dry stone, cameras, tripwires, and one
+      pearl the abbey swore the sea would keep. Take each night's prize and reach
+      the EXIT unseen — a GHOST leaves with everything and is never seen at all.</p>
+      <div class="nights">${nights}</div>
       <p class="tally">WASD / arrows move · Shift sneak · Space sprint · E take ·
       Click throw a coin · Esc pause · R retry · M mute</p>
-      <p class="prompt">Click or press Enter to slip in.</p>
+      <p class="prompt">Press ENTER to begin — Night 1, the Causeway Stores.</p>
     </div>`);
 }
 
@@ -114,9 +195,15 @@ function advance() {
 overlay.addEventListener('mousedown', () => { if (campaign.screen !== 'play') advance(); });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && campaign.screen !== 'play') advance();
+  else if (campaign.screen === 'tally' && (e.key === 'r' || e.key === 'R')) { sound.ensure(); startLevel(campaign.level); }
+  else if (campaign.screen === 'tally' && e.key === 'Escape') { sound.ensure(); title(); }
 });
 
 // --- staged screenshots --------------------------------------------------------
+// The tour is a product tour now, the shape the winning entries take: the cover in
+// play, the game's own title screen, one held breath of near-miss, and the proof
+// of completion — the results screen a real escape ends on. Every shot is still
+// one ordinary state of the real game, arranged and frozen; nothing is mocked.
 function dropScentPath(w, points, spanSeconds) {
   const step = spanSeconds / Math.max(1, points.length - 1);
   points.forEach(([tx, ty], i) => {
@@ -126,39 +213,60 @@ function dropScentPath(w, points, spanSeconds) {
 }
 
 function stageShot(n) {
-  const levelFor = { 1: 0, 2: 1, 3: 2, 4: 4 };
+  if (n === 2) {
+    // The title screen, exactly as the game boots: the menu card over the dimmed
+    // flooded cloister. title() builds the backdrop world itself.
+    world = null;
+    title();
+    drawWorld(ctx, world);
+    window.__lowtideShot = n;
+    return;
+  }
+  if (n === 4) {
+    // The completion proof: the Tide Gate escaped as a GHOST, and the results
+    // screen a real run ends on. The earlier nights are recorded in the campaign
+    // structures in exactly the shape recordResult() writes — two GHOSTs, a
+    // SHADOW, a BRUISER — and the last night's own result is computed by
+    // recordResult() itself from a world staged as a finished escape.
+    campaign.results = [
+      { stars: 3, rank: 'GHOST', time: 74, spotted: 0, loot: 3, lootTotal: 3, strikes: 0 },
+      { stars: 3, rank: 'GHOST', time: 96, spotted: 0, loot: 3, lootTotal: 3, strikes: 0 },
+      { stars: 2, rank: 'SHADOW', time: 121, spotted: 0, loot: 3, lootTotal: 4, strikes: 0 },
+      { stars: 2, rank: 'BRUISER', time: 149, spotted: 2, loot: 4, lootTotal: 4, strikes: 1 },
+      null,
+    ];
+    campaign.totals = { time: 440, loot: 13, lootTotal: 14, spotted: 2, ghostLevels: 3 };
+    campaign.level = 4;
+    world = new World(4, sound);
+    world.time = 118;
+    world.objectiveTaken = true;
+    for (const l of world.loot) l.taken = true;
+    world.spotted = 0;
+    world.strikes = 0;
+    Object.assign(world.player, tileCenter(21, 15));
+    world.player.facing = Math.PI;
+    recordResult();
+    campaign.screen = 'tally';
+    showOverlay(resultsHTML());
+    drawWorld(ctx, world);
+    hud.update(world);
+    window.__lowtideShot = n;
+    return;
+  }
+  const levelFor = { 1: 1, 3: 4 };
   world = new World(levelFor[n], sound);
   world.time = 42;
   const P = world.player;
   const G = world.guards;
   if (n === 1) {
-    // L1: a thrown coin pulls a warden off his route; the thief hides at low cover.
-    // A second warden, south by the stores, has half-heard something too — two
-    // speech bubbles in one frame, each warden talking past the other.
-    const coin = tileCenter(14, 3);
-    world.coinRest = { x: coin.x, y: coin.y };
-    world.effects.push({ x: coin.x, y: coin.y, t: 0.3, max: 0.9, kind: 'ping' });
-    world.coins = 2;
-    const g = G[1];
-    Object.assign(g, tileCenter(15, 2));
-    g.state = 'investigate'; g.target = { ...coin }; g.detection = 0.55;
-    g.facing = Math.atan2(coin.y - g.y, coin.x - g.x);
-    g.say('What was that—?', 99);
-    Object.assign(G[0], tileCenter(6, 2)); G[0].facing = 0;
-    Object.assign(G[2], tileCenter(12, 14)); G[2].facing = -Math.PI / 2;
-    G[2].state = 'suspicious'; G[2].detection = 0.42;
-    G[2].say("Hm? Who's there?", 99);
-    Object.assign(P, tileCenter(19, 3));
-    P.stance = 'sneak'; P.facing = Math.PI;
-    world.alarm = 1;
-  } else if (n === 2) {
     // L2, the cover: the whole scene plays out around the middle of the cloister. The
     // thief's scent trail snakes from the south-west bank, through the gap in the
     // middle wall and up to the north-east shadow patch — and the hound is already
     // working it, nose down at the centre of the frame, the dashed chain running on
     // ahead of it toward where the thief sits hidden in that shadow. A warden sweeps
     // the search a few tiles away, his LAST SEEN marker out on the wrong side of the
-    // patch; the camera turns over the north hall.
+    // patch — and now the dashed hunt-line runs from the warden to that marker, and
+    // the SEARCHING banner stands across the map; the camera turns over the north hall.
     dropScentPath(world, [
       [2.0, 15.0], [2.0, 14.0], [3.25, 13.1], [5.1, 12.6], [8.1, 12.1], [9.1, 11.1],
       [9.25, 10.1], [9.25, 9.1], [10.3, 8.3], [11.25, 7.45], [13.1, 6.2], [14.6, 6.2],
@@ -184,28 +292,6 @@ function stageShot(n) {
     Object.assign(P, tileCenter(16, 2));
     P.stance = 'sneak'; P.facing = Math.PI * 0.55;
   } else if (n === 3) {
-    // L3: the alarm is up — a chase at full sprint, tripwire lit, camera watching.
-    world.time = 10;
-    Object.assign(P, tileCenter(11, 10));
-    P.stance = 'sprint'; P.moving = true; P.facing = 0;
-    const g = G[1];
-    Object.assign(g, tileCenter(9, 10));
-    g.state = 'chase'; g.detection = 1;
-    g.lastSeen = { x: P.x, y: P.y };
-    g.facing = 0;
-    g.say('There! Stop!', 99);
-    const g3 = G[3];
-    Object.assign(g3, tileCenter(19, 12));
-    g3.state = 'investigate'; g3.detection = 0.6;
-    g3.target = { x: P.x, y: P.y };
-    g3.facing = Math.PI;
-    Object.assign(G[0], tileCenter(3, 5)); G[0].facing = Math.PI / 2;
-    Object.assign(G[2], tileCenter(6, 14)); G[2].facing = 0;
-    world.cameras[0].angle = -Math.PI / 2;
-    world.cameras[0].exposure = 0.55;
-    world.alarm = 2;
-    world.spotted = 1;
-  } else if (n === 4) {
     // L5, the Tide Gate: the near miss. The thief freezes at the head of the causeway,
     // tucked against the low sea wall at the very edge of the causeway warden's cone,
     // close enough that the lamp light has his meter half-filled — the ring above the
@@ -264,7 +350,12 @@ if (params.has('shot')) {
       if (input.takePress('escape')) { campaign.screen = 'play'; hideOverlay(); }
       else if (input.takePress('r')) startLevel(campaign.level);
     }
-    if (world) { drawWorld(ctx, world); hud.update(world); }
+    if (world) {
+      drawWorld(ctx, world);
+      // on the title screen the panel keeps its opening state (Night 1's), so the
+      // menu never describes the backdrop world it happens to be standing over
+      if (campaign.screen !== 'title') hud.update(world);
+    }
     input.endFrame();
     requestAnimationFrame(loop);
   };

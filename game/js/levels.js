@@ -7,7 +7,9 @@
 // bookcases, rugs…) that render.js paints over the tiles. Props never change a tile,
 // a route or a sightline — they are looks only, and nothing but the renderer reads them.
 // The same goes for `zones`: floor-painted place names the renderer lays over the tiles
-// so a screenshot can say where in the abbey the thief is standing.
+// so a screenshot can say where in the abbey the thief is standing. And `par` / `teaser`
+// are campaign metadata — the time a clean run is measured against, and the one line of
+// story that lures the thief onward — read only by main.js's results and title screens.
 
 export const TILE = 40;
 export const COLS = 24;
@@ -22,6 +24,8 @@ export const LEVELS = [
   {
     name: 'The Causeway Stores',
     prize: 'the Drowned Ledger',
+    par: 90,
+    teaser: 'Ledgers in the dry dark, and wardens who have walked the same rounds for thirty years.',
     coins: 3,
     start: [2, 16],
     objective: [21, 2],
@@ -77,6 +81,8 @@ export const LEVELS = [
   {
     name: 'The Flooded Cloister',
     prize: 'the Choir Ledger',
+    par: 105,
+    teaser: 'The cloister floods at high tide — and the abbey hounds hunt by scent across the dry stone.',
     coins: 3,
     start: [1, 8],
     objective: [21, 3],
@@ -130,6 +136,8 @@ export const LEVELS = [
   {
     name: 'The Chapter House',
     prize: 'the Chapter Seal',
+    par: 115,
+    teaser: 'The seal waits behind tripwires and a sweeping camera, among desks that remember every name.',
     coins: 4,
     start: [2, 15],
     objective: [20, 3],
@@ -188,6 +196,8 @@ export const LEVELS = [
   {
     name: 'The Sunken Vault',
     prize: 'the Tide Pearl',
+    par: 135,
+    teaser: 'The vault drowned a generation ago. Five wardens and two hounds still guard what the water took.',
     coins: 4,
     start: [12, 16],
     objective: [11, 2],
@@ -260,6 +270,8 @@ export const LEVELS = [
     // (loot) wait in the sanctum corners and down on the shore banks.
     name: 'The Tide Gate',
     prize: 'the Tide Pearl',
+    par: 120,
+    teaser: 'Last, the sea-gate: the Pearl itself, one tripwired gate, and the open water beyond.',
     coins: 4,
     start: [11, 16],
     objective: [12, 2],

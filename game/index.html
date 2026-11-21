@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOWTIDE — a stealth game</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="frame">
+  <div id="stage">
+    <canvas id="game" width="960" height="720"></canvas>
+    <div id="overlay"></div>
+  </div>
+  <aside id="hud">
+    <h1>LOWTIDE</h1>
+    <div id="hud-level" class="level">LEVEL 1 — THE CAUSEWAY STORES</div>
+    <div id="hud-objective" class="objective">Steal the prize.</div>
+    <div class="row"><span>TIME</span><b id="hud-time">0:00</b></div>
+
+    <div id="banner" class="banner calm">
+      <div id="banner-word">UNSEEN</div>
+      <div id="banner-advice">Move quiet. Watch the cones, mind the hounds.</div>
+    </div>
+
+    <div class="row"><span>ALARM</span><span id="alarm"><i class="on calm"></i><i></i><i></i></span></div>
+    <div class="row"><span>VISIBILITY</span><b id="hud-vis">DIM FLOOR</b></div>
+    <div class="row"><span>NOISE</span><b id="hud-noise">STILL</b></div>
+    <div class="row"><span>LOOT</span><b id="hud-loot">0 / 0</b></div>
+    <div class="row"><span>COINS</span><b id="hud-coins">0</b></div>
+    <div class="row"><span>SPOTTED</span><b id="hud-spotted">0</b></div>
+    <div class="row"><span>STRIKES</span><b id="hud-strikes">○○○</b></div>
+    <div class="row goal"><span>GOAL</span><b id="hud-goal">STEAL</b></div>
+
+    <h2>LEGEND</h2>
+    <ul class="legend">
+      <li><i class="sw warden"></i> Lantern warden + vision cone</li>
+      <li><i class="sw hound"></i> Scent hound + scent trail</li>
+      <li><i class="sw camera"></i> Sweeping camera cone</li>
+      <li><i class="sw lowcover"></i> Low cover — sneak to hide</li>
+      <li><i class="sw crate"></i> Crate / wall — blocks sight</li>
+      <li><i class="sw lamp"></i> Lamp light — you show up</li>
+      <li><i class="sw shadow"></i> Deep shadow — stay hidden</li>
+      <li><i class="sw water"></i> Water — loud, washes scent</li>
+      <li><i class="sw wire"></i> Tripwire — cross it dark</li>
+      <li><i class="sw vent"></i> Vent — only you can crawl</li>
+      <li><i class="sw prize"></i> Objective prize</li>
+      <li><i class="sw exit"></i> Exit — opens once taken</li>
+    </ul>
+
+    <h2>CONTROLS</h2>
+    <p class="controls">WASD / arrows move · SHIFT sneak · SPACE sprint · E take ·
+    CLICK throw coin · ESC pause · R retry · M mute</p>
+  </aside>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -3,6 +3,9 @@
 // movement, hides a sneaking thief from sight) · ~ water (loud to wade, washes scent away)
 // · s deep shadow floor · v vent (only the thief may crawl in) · L lamp (solid, lights a pool)
 // · . floor · X exit. Entities (player start, objective, loot, patrols) live in the defs.
+// Each def also carries `props`: a purely decorative dressing layer (barrels, benches,
+// bookcases, rugs…) that render.js paints over the tiles. Props never change a tile,
+// a route or a sightline — they are looks only, and nothing but the renderer reads them.
 
 export const TILE = 40;
 export const COLS = 24;
@@ -29,6 +32,15 @@ export const LEVELS = [
     hounds: [],
     cameras: [],
     wires: [],
+    props: [
+      { k: 'barrel', x: 3, y: 2 }, { k: 'sacks', x: 4, y: 3 },
+      { k: 'sacks', x: 5, y: 9 }, { k: 'barrel', x: 6, y: 10 },
+      { k: 'barrel', x: 19, y: 5 }, { k: 'stack', x: 18, y: 6 },
+      { k: 'sacks', x: 18, y: 2 }, { k: 'barrel', x: 18, y: 3 },
+      { k: 'shelf', x: 11, y: 2 }, { k: 'shelf', x: 11, y: 5 },
+      { k: 'cart', x: 8, y: 8 }, { k: 'cart', x: 2, y: 12 },
+      { k: 'barrel', x: 18, y: 12 }, { k: 'sacks', x: 19, y: 13 },
+    ],
     grid: [
       '########################',
       '#..........#...........#',
@@ -65,6 +77,14 @@ export const LEVELS = [
     hounds: [{ path: [[3, 10], [3, 15], [10, 15], [10, 10]] }],
     cameras: [{ x: 12, y: 1, a0: Math.PI * 0.25, a1: Math.PI * 0.75 }],
     wires: [],
+    props: [
+      { k: 'planter', x: 12, y: 7 }, { k: 'planter', x: 13, y: 8 }, { k: 'planter', x: 2, y: 2 },
+      { k: 'bench', x: 4, y: 15 }, { k: 'bench', x: 17, y: 15 }, { k: 'bench', x: 19, y: 4 },
+      { k: 'carving', x: 6, y: 5 }, { k: 'carving', x: 14, y: 9 },
+      { k: 'rubble', x: 20, y: 13 },
+      { k: 'sparkle', x: 7, y: 3 }, { k: 'sparkle', x: 6, y: 11 },
+      { k: 'sparkle', x: 8, y: 14 }, { k: 'sparkle', x: 19, y: 7 },
+    ],
     grid: [
       '########################',
       '#.....~~...............#',
@@ -104,6 +124,16 @@ export const LEVELS = [
     wires: [
       { x1: 7, y1: 9, x2: 15, y2: 9 },
       { x1: 17, y1: 3, x2: 17, y2: 7 },
+    ],
+    props: [
+      { k: 'bookcase', x: 6, y: 3 }, { k: 'bookcase', x: 8, y: 3 }, { k: 'bookcase', x: 9, y: 4 },
+      { k: 'bookcase', x: 6, y: 5 }, { k: 'bookcase', x: 12, y: 7 }, { k: 'bookcase', x: 17, y: 7 },
+      { k: 'bookcase', x: 4, y: 11 }, { k: 'bookcase', x: 14, y: 11 },
+      { k: 'bookcase', x: 10, y: 14 }, { k: 'bookcase', x: 16, y: 14 },
+      { k: 'table', x: 10, y: 9, w: 3, h: 1 }, { k: 'table', x: 9, y: 12, w: 3, h: 1 },
+      { k: 'table', x: 16, y: 15, w: 3, h: 1 },
+      { k: 'lectern', x: 20, y: 5 }, { k: 'lectern', x: 12, y: 15 },
+      { k: 'rug', x: 12, y: 8, w: 4, h: 1 },
     ],
     grid: [
       '########################',
@@ -151,6 +181,17 @@ export const LEVELS = [
     wires: [
       { x1: 10, y1: 10, x2: 13, y2: 10 },
       { x1: 4, y1: 11, x2: 19, y2: 11 },
+    ],
+    props: [
+      { k: 'altar', x: 10, y: 1, w: 3, h: 1 },
+      { k: 'pew', x: 2, y: 12, w: 3, h: 1 }, { k: 'pew', x: 19, y: 12, w: 3, h: 1 },
+      { k: 'pew', x: 6, y: 14, w: 3, h: 1 }, { k: 'pew', x: 18, y: 14, w: 3, h: 1 },
+      { k: 'bowl', x: 19, y: 2 }, { k: 'bowl', x: 4, y: 7 },
+      { k: 'bowl', x: 15, y: 8 }, { k: 'bowl', x: 6, y: 15 },
+      { k: 'rug', x: 10, y: 13, w: 3, h: 2 }, { k: 'rug', x: 11, y: 4, w: 3, h: 1 },
+      { k: 'treasure', x: 21, y: 1 }, { k: 'treasure', x: 2, y: 16 }, { k: 'treasure', x: 18, y: 9 },
+      { k: 'sparkle', x: 9, y: 6 }, { k: 'sparkle', x: 12, y: 7 },
+      { k: 'carving', x: 7, y: 1 }, { k: 'carving', x: 15, y: 1 },
     ],
     grid: [
       '########################',

@@ -148,27 +148,37 @@ function stageShot(n) {
     P.stance = 'sneak'; P.facing = Math.PI;
     world.alarm = 1;
   } else if (n === 2) {
-    // L2: a hound tracks the dashed scent trail up the dry west bank beside the water
-    // channel; a warden searches the cloister's east side, last-seen marker out.
-    dropScentPath(world, [[2.5, 15.5], [2.4, 14.3], [2.5, 13.2], [3.2, 12.5], [4.5, 12.4]], 6);
+    // L2, the cover: the whole scene plays out around the middle of the cloister. The
+    // thief's scent trail snakes from the south-west bank, through the gap in the
+    // middle wall and up to the north-east shadow patch — and the hound is already
+    // working it, nose down at the centre of the frame, the dashed chain running on
+    // ahead of it toward where the thief sits hidden in that shadow. A warden sweeps
+    // the search a few tiles away, his LAST SEEN marker out on the wrong side of the
+    // patch; the camera turns over the north hall.
+    dropScentPath(world, [
+      [2.0, 15.0], [2.0, 14.0], [3.25, 13.1], [5.1, 12.6], [8.1, 12.1], [9.1, 11.1],
+      [9.25, 10.1], [9.25, 9.1], [10.3, 8.3], [11.25, 7.45], [13.1, 6.2], [14.6, 6.2],
+      [16.0, 5.55], [16.3, 4.5], [16.2, 3.25],
+    ], 9);
     const h = world.hounds[0];
-    Object.assign(h, tileCenter(2, 15));
+    const anchor = world.scent.crumbs[8]; // the crumb just north of the middle wall
+    Object.assign(h, { x: anchor.x, y: anchor.y });
     h.state = 'tracking';
-    h.chain = world.scent.chainFrom(world.scent.crumbs[0]);
+    h.chain = world.scent.chainFrom(anchor);
     h.chainIdx = 0;
     h.facing = Math.atan2(h.chain[1].y - h.y, h.chain[1].x - h.x);
     world.alarm = 1;
     const g = G[0];
-    Object.assign(g, tileCenter(15, 3));
+    Object.assign(g, tileCenter(12, 3));
     g.state = 'search'; g.stateT = 1; g.detection = 0.3;
-    g.lastSeen = tileCenter(17, 3);
-    g.facing = Math.PI * 0.4;
+    g.lastSeen = tileCenter(14, 3);
+    g.facing = Math.PI * 0.12;
     Object.assign(G[1], tileCenter(17, 12)); G[1].facing = Math.PI;
     Object.assign(G[2], tileCenter(5, 7)); G[2].facing = 0;
     world.cameras[0].angle = Math.PI / 2;
     world.cameras[0].exposure = 0.25;
-    Object.assign(P, tileCenter(4, 12));
-    P.stance = 'sneak'; P.facing = Math.PI * 0.2;
+    Object.assign(P, tileCenter(16, 2));
+    P.stance = 'sneak'; P.facing = Math.PI * 0.55;
   } else if (n === 3) {
     // L3: the alarm is up — a chase at full sprint, tripwire lit, camera watching.
     world.time = 10;

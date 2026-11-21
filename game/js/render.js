@@ -2,15 +2,17 @@
 // cones coloured by warden state, the scent trail, cameras, tripwires, callouts and the
 // thief's own noise ring. Pure drawing: all decisions live in world.js and the actors.
 
-import { TILE, COLS, ROWS, tileAt } from './levels.js';
+import { TILE, COLS, ROWS, tileAt, tileCenter } from './levels.js';
 import { conePolygon, lightAt } from './vision.js';
 import { CONE_RANGE, CONE_HALF } from './guards.js';
 import { NOSE_RADIUS, CRUMB_LIFE } from './hounds.js';
 
+// Cone fills run about a third stronger than a whisper: at contact-sheet size the
+// cones ARE the threat display, so they sit saturated over the floor they threaten.
 const CONE_FILL = {
-  patrol: 'rgba(255,240,190,0.13)', suspicious: 'rgba(255,190,80,0.21)',
-  investigate: 'rgba(255,170,60,0.23)', chase: 'rgba(255,70,50,0.30)',
-  search: 'rgba(255,190,80,0.18)', return: 'rgba(255,240,190,0.11)',
+  patrol: 'rgba(255,240,190,0.17)', suspicious: 'rgba(255,190,80,0.27)',
+  investigate: 'rgba(255,170,60,0.30)', chase: 'rgba(255,70,50,0.39)',
+  search: 'rgba(255,190,80,0.23)', return: 'rgba(255,240,190,0.14)',
 };
 
 export function drawWorld(ctx, world) {
@@ -19,6 +21,8 @@ export function drawWorld(ctx, world) {
   ctx.fillRect(0, 0, COLS * TILE, ROWS * TILE);
   drawTiles(ctx, world);
   drawProps(ctx, world);
+  drawPatrolRoutes(ctx, world);
+  drawZoneLabels(ctx, world);
   drawLampGlow(ctx, world);
   drawItems(ctx, world);
   drawWires(ctx, world);
@@ -27,6 +31,9 @@ export function drawWorld(ctx, world) {
   drawVignette(ctx);
   drawActors(ctx, world);
   drawMarkers(ctx, world);
+  drawPlaceLabels(ctx, world);
+  drawCloseCall(ctx, world);
+  drawHeaderStrip(ctx, world);
 }
 
 // A small deterministic hash of a tile (and the level it sits in), so the dressing
@@ -564,6 +571,174 @@ const PROP_PAINT = {
   banner: propBanner, sconce: propSconce, candle: propCandle, statue: propStatue,
 };
 
+// --- the legibility layer -------------------------------------------------------
+// Everything in this section is paint over data the game already keeps — patrol
+// waypoints, detection meters, place names — laid down so a single still frame can
+// be read at a glance: where the wardens walk, how close the thief came, and where
+// in the abbey he is standing. None of it moves a body, blocks a sightline or feeds
+// a decision; the actors neither know nor care that they are labelled.
+
+// Each warden's patrol, drawn on the floor it walks: a dashed ivory-gold loop
+// through its waypoint centres, a node dot on every waypoint. Under the cones and
+// the actors, over the dressing — the route is part of the floor's information.
+function drawPatrolRoutes(ctx, world) {
+  for (const g of world.guards) {
+    if (!g.path || g.path.length < 2) continue;
+    const pts = g.path.map(([tx, ty]) => tileCenter(tx, ty));
+    ctx.strokeStyle = 'rgba(236,220,165,0.30)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 7]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+    for (const p of pts) {
+      ctx.fillStyle = 'rgba(10,13,20,0.45)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(236,220,165,0.55)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+// Place names painted on the floor in spaced caps, low and quiet — the abbey
+// naming its own rooms under the thief's feet.
+function drawZoneLabels(ctx, world) {
+  ctx.textAlign = 'center';
+  for (const z of world.level.zones || []) {
+    const c = tileCenter(z.x, z.y);
+    ctx.font = '600 13px system-ui, sans-serif';
+    const spaced = z.text.split('').join('  ');
+    ctx.fillStyle = 'rgba(2,4,8,0.35)';
+    ctx.fillText(spaced, c.x + 1, c.y + 5);
+    ctx.fillStyle = 'rgba(196,212,236,0.20)';
+    ctx.fillText(spaced, c.x, c.y + 4);
+  }
+}
+
+// The EXIT flagged with its own pill and arrow, and the prize named while it
+// still waits to be taken. Drawn late, over the cones, so the two things the
+// thief is steering by never sink under the light.
+function drawPlaceLabels(ctx, world) {
+  ctx.textAlign = 'center';
+  // the prize, named in gold while it waits
+  if (!world.objectiveTaken) {
+    const p = world.objectivePos;
+    const name = world.def.prize.replace(/^the /, '').toUpperCase();
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    const w = ctx.measureText(name).width + 14;
+    ctx.fillStyle = 'rgba(8,10,16,0.78)';
+    ctx.beginPath(); ctx.roundRect(p.x - w / 2, p.y - 38, w, 17, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,217,119,0.5)';
+    ctx.stroke();
+    ctx.fillStyle = '#ffd977';
+    ctx.fillText(name, p.x, p.y - 26);
+  }
+  // the exit: a pill above the door with an arrow dropping onto it
+  const e = world.exit;
+  const open = world.objectiveTaken;
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  const w = ctx.measureText('EXIT').width + 14;
+  const px = e.x - w / 2, py = e.y - TILE / 2 - 24;
+  ctx.fillStyle = 'rgba(8,10,16,0.78)';
+  ctx.beginPath(); ctx.roundRect(px, py, w, 17, 4); ctx.fill();
+  ctx.strokeStyle = open ? 'rgba(87,215,197,0.65)' : 'rgba(150,90,82,0.55)';
+  ctx.stroke();
+  ctx.fillStyle = open ? '#57d7c5' : '#c08a82';
+  ctx.fillText('EXIT', e.x, py + 12.5);
+  ctx.beginPath();
+  ctx.moveTo(e.x - 4.5, py + 18); ctx.lineTo(e.x + 4.5, py + 18); ctx.lineTo(e.x, py + 24);
+  ctx.closePath(); ctx.fill();
+}
+
+// The near miss, named: a warden's meter in the 40–90% band with the thief inside
+// his cone or right at its rim gets a bold tag over the thief's head.
+function drawCloseCall(ctx, world) {
+  const p = world.player;
+  let worst = 0;
+  for (const g of world.guards) {
+    if (g.detection < 0.40 || g.detection > 0.90) continue;
+    const dist = Math.hypot(p.x - g.x, p.y - g.y);
+    if (dist > CONE_RANGE * 1.08) continue;
+    const ang = Math.atan2(p.y - g.y, p.x - g.x);
+    let diff = Math.abs(((ang - g.facing) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+    if (diff < CONE_HALF * 1.3 && g.detection > worst) worst = g.detection;
+  }
+  if (worst <= 0) return;
+  const text = `CLOSE CALL ${Math.round(worst * 100)}%`;
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 16;
+  const x = p.x - w / 2, y = p.y - 52;
+  ctx.fillStyle = '#ffb454';
+  ctx.beginPath(); ctx.roundRect(x, y, w, 20, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(26,18,6,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#1a1206';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, p.x, y + 14.5);
+}
+
+// The header strip across the top of the play area: level and objective on the
+// left, and on the right the abbey's sharpest warden meter as a DETECTION bar
+// with its number and a state pill — the same truth the side panel tells, readable
+// without leaving the map.
+function drawHeaderStrip(ctx, world) {
+  const W = COLS * TILE, H = 30;
+  ctx.fillStyle = 'rgba(7,10,17,0.88)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(126,148,184,0.4)';
+  ctx.fillRect(0, H, W, 1);
+  // left: where you are, and what you are here to steal
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillStyle = '#e8eef7';
+  const levelText = `LEVEL ${world.levelIndex + 1} — ${world.def.name.toUpperCase()}`;
+  ctx.fillText(levelText, 12, 20);
+  const lw = ctx.measureText(levelText).width;
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillStyle = '#9fb0c8';
+  const objText = world.objectiveTaken ? '·  Objective taken — reach the EXIT' : `·  Steal ${world.def.prize}`;
+  ctx.fillText(objText, 12 + lw + 8, 20);
+  // right: the detection meter
+  const maxDet = Math.max(0, ...world.guards.map((g) => g.detection));
+  const states = world.guards.map((g) => g.state);
+  let word, col;
+  if (states.includes('chase')) { word = 'ALARM'; col = '#ff5040'; }
+  else if (states.includes('investigate') || maxDet >= 0.62) { word = 'NOTICED'; col = '#ff8a50'; }
+  else if (states.includes('suspicious') || states.includes('search') || maxDet > 0.12) { word = 'SUSPICIOUS'; col = '#ffb454'; }
+  else { word = 'UNSEEN'; col = '#57d7c5'; }
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  const pillW = ctx.measureText(word).width + 16;
+  const pillX = W - 12 - pillW;
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.roundRect(pillX, 6, pillW, 18, 5); ctx.fill();
+  ctx.fillStyle = '#10131a';
+  ctx.textAlign = 'center';
+  ctx.fillText(word, pillX + pillW / 2, 19);
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillStyle = col;
+  ctx.textAlign = 'right';
+  const pctText = `${Math.round(maxDet * 100)}%`;
+  ctx.fillText(pctText, pillX - 9, 21);
+  const pctW = ctx.measureText(pctText).width;
+  const barW = 120, barX = pillX - 9 - pctW - 10 - barW;
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.beginPath(); ctx.roundRect(barX, 11, barW, 8, 4); ctx.fill();
+  if (maxDet > 0.005) {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.roundRect(barX, 11, Math.max(8, barW * maxDet), 8, 4); ctx.fill();
+  }
+  ctx.font = '600 10px system-ui, sans-serif';
+  ctx.fillStyle = '#7e8ea8';
+  ctx.fillText('D E T E C T I O N', barX - 8, 19);
+  ctx.textAlign = 'left';
+}
+
 // A soft vignette: the room edges fall away into deeper shadow so lamp pools and lit
 // floor read warm against cool dark. Drawn over the room, under the actors.
 function drawVignette(ctx) {
@@ -667,7 +842,7 @@ function drawCrumbs(ctx, world) {
 function drawCones(ctx, world) {
   for (const cam of world.cameras) {
     const poly = conePolygon(world.level, cam.x, cam.y, cam.angle, 0.5, TILE * 5, 14);
-    ctx.fillStyle = cam.exposure > 0.55 ? 'rgba(255,80,60,0.20)' : 'rgba(90,200,255,0.13)';
+    ctx.fillStyle = cam.exposure > 0.55 ? 'rgba(255,80,60,0.26)' : 'rgba(90,200,255,0.17)';
     pathOf(ctx, poly);
     ctx.fill();
   }
@@ -805,6 +980,17 @@ function drawActors(ctx, world) {
       ctx.beginPath(); ctx.arc(g.x, g.y - 30, 9, -Math.PI * 0.8, -Math.PI * 0.8 + Math.PI * 1.6 * g.detection); ctx.stroke();
       ctx.lineWidth = 1;
     }
+    if (g.detection >= 0.15 && g.detection < 0.995) {
+      // the meter as a number, riding beside the arc while it is still a question
+      const col = g.state === 'chase' ? '#ff5040' : '#ffb454';
+      const pct = `${Math.round(g.detection * 100)}%`;
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(0,0,0,0.78)';
+      ctx.fillText(pct, g.x + 13.7, g.y - 25.2);
+      ctx.fillStyle = col;
+      ctx.fillText(pct, g.x + 13, g.y - 26);
+    }
     if (g.state === 'chase' || g.state === 'suspicious' || g.state === 'investigate') {
       ctx.fillStyle = g.state === 'chase' ? '#ff5040' : '#ffb454';
       ctx.font = 'bold 15px system-ui, sans-serif';
@@ -876,14 +1062,24 @@ function drawMarkers(ctx, world) {
   }
 }
 
+// A spoken line gets a spoken shape: a pale speech bubble with a tail dropping
+// toward the warden (or hound) doing the talking, dark words on parchment.
 function sayPill(ctx, x, y, text) {
-  ctx.font = '11px system-ui, sans-serif';
-  const w = ctx.measureText(text).width + 12;
-  ctx.fillStyle = 'rgba(10,12,18,0.85)';
+  ctx.font = '600 11px system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 14;
+  const bx = x - w / 2, by = y - 10, bh = 18;
+  ctx.fillStyle = 'rgba(246,242,231,0.96)';
   ctx.beginPath();
-  ctx.roundRect(x - w / 2, y - 10, w, 17, 5);
+  ctx.roundRect(bx, by, w, bh, 6);
   ctx.fill();
-  ctx.fillStyle = '#ffe9c4';
+  ctx.beginPath();
+  ctx.moveTo(x - 4, by + bh - 1); ctx.lineTo(x + 4, by + bh - 1); ctx.lineTo(x, by + bh + 6);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(24,26,34,0.30)';
+  ctx.beginPath();
+  ctx.roundRect(bx, by, w, bh, 6);
+  ctx.stroke();
+  ctx.fillStyle = '#232733';
   ctx.textAlign = 'center';
-  ctx.fillText(text, x, y + 3);
+  ctx.fillText(text, x, by + 13);
 }

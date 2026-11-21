@@ -10,6 +10,17 @@ export const CONE_RANGE = TILE * 6.8;
 export const CONE_HALF = 0.66; // radians, ~38 degrees
 const SPEEDS = { patrol: 62, suspicious: 0, investigate: 98, chase: 216, search: 84, return: 124 };
 
+// The wardens' muttered lines, spoken in a speech bubble as a warden first grows
+// suspicious or sets off to investigate. Purely a voice: the rotation never touches
+// a decision, a speed or a meter — it only decides which line is showing.
+const BUBBLE_LINES = ["Hm? Who's there?", 'Something moved…', 'What was that?', 'Who goes—?'];
+let bubbleNext = 0;
+function bubbleLine() {
+  const line = BUBBLE_LINES[bubbleNext % BUBBLE_LINES.length];
+  bubbleNext++;
+  return line;
+}
+
 function angleLerp(a, b, t) {
   let d = (b - a) % (Math.PI * 2);
   if (d > Math.PI) d -= Math.PI * 2;
@@ -53,6 +64,7 @@ export class Warden {
       this.state = 'investigate';
       this.stateT = 0;
       if (text) this.say(text);
+      else this.say(bubbleLine(), 2.5);
     }
   }
 
@@ -99,7 +111,7 @@ export class Warden {
     // --- state machine ---
     this.moving = false;
     if (this.state === 'patrol') {
-      if (this.detection >= 0.35) { this.state = 'suspicious'; this.stateT = 0; this.say('Hm?'); }
+      if (this.detection >= 0.35) { this.state = 'suspicious'; this.stateT = 0; this.say(bubbleLine(), 2.5); }
       else if (this.pauseT > 0) {
         this.pauseT -= dt;
         this.facing += Math.sin(world.time * 1.4 + this.scanPhase) * dt * 0.7;
@@ -112,7 +124,7 @@ export class Warden {
       }
     } else if (this.state === 'suspicious') {
       if (this.lastSeen) this.facing = angleLerp(this.facing, Math.atan2(this.lastSeen.y - this.y, this.lastSeen.x - this.x), dt * 5);
-      if (this.detection >= 0.62) { this.state = 'investigate'; this.stateT = 0; this.target = this.lastSeen; }
+      if (this.detection >= 0.62) { this.state = 'investigate'; this.stateT = 0; this.target = this.lastSeen; this.say(bubbleLine(), 2.5); }
       else if (this.stateT > 1.5) {
         if (this.detection > 0.2 && this.lastSeen) { this.state = 'investigate'; this.target = this.lastSeen; }
         else this.state = 'patrol';

@@ -6,6 +6,8 @@
 // Each def also carries `props`: a purely decorative dressing layer (barrels, benches,
 // bookcases, rugs…) that render.js paints over the tiles. Props never change a tile,
 // a route or a sightline — they are looks only, and nothing but the renderer reads them.
+// The same goes for `zones`: floor-painted place names the renderer lays over the tiles
+// so a screenshot can say where in the abbey the thief is standing.
 
 export const TILE = 40;
 export const COLS = 24;
@@ -45,6 +47,11 @@ export const LEVELS = [
       { k: 'candle', x: 21, y: 14 }, { k: 'barrel', x: 20, y: 8 },
       { k: 'sacks', x: 13, y: 13 }, { k: 'cart', x: 15, y: 8 },
       { k: 'barrel', x: 7, y: 15 },
+    ],
+    zones: [
+      { x: 5, y: 3, text: 'THE STORES' },
+      { x: 12, y: 8, text: 'THE CROSSING' },
+      { x: 11, y: 14, text: 'THE SOUTH SHORE' },
     ],
     grid: [
       '########################',
@@ -93,6 +100,11 @@ export const LEVELS = [
       { k: 'statue', x: 1, y: 1 }, { k: 'statue', x: 22, y: 15 },
       { k: 'candle', x: 8, y: 15 }, { k: 'candle', x: 16, y: 1 },
       { k: 'planter', x: 15, y: 7 }, { k: 'bench', x: 9, y: 15 },
+    ],
+    zones: [
+      { x: 6, y: 8, text: 'THE FLOODED WALK' },
+      { x: 12, y: 12, text: 'THE CLOISTER GARTH' },
+      { x: 17, y: 2, text: 'THE CHOIR END' },
     ],
     grid: [
       '########################',
@@ -146,6 +158,11 @@ export const LEVELS = [
       { k: 'banner', x: 7, y: 3 }, { k: 'sconce', x: 9, y: 4 },
       { k: 'candle', x: 20, y: 15 }, { k: 'candle', x: 5, y: 10 },
       { k: 'statue', x: 22, y: 5 }, { k: 'bookcase', x: 19, y: 15 },
+    ],
+    zones: [
+      { x: 6, y: 1, text: 'THE VENT RUN' },
+      { x: 18, y: 5, text: 'THE CHAPTER DESKS' },
+      { x: 11, y: 10, text: 'THE READING FLOOR' },
     ],
     grid: [
       '########################',
@@ -208,6 +225,11 @@ export const LEVELS = [
       { k: 'candle', x: 2, y: 9 }, { k: 'statue', x: 22, y: 4 },
       { k: 'bowl', x: 12, y: 5 }, { k: 'treasure', x: 12, y: 16 },
     ],
+    zones: [
+      { x: 11, y: 3, text: 'THE NAVE' },
+      { x: 11, y: 7, text: 'THE FLOODED AISLE' },
+      { x: 11, y: 14, text: 'THE VAULT FLOOR' },
+    ],
     grid: [
       '########################',
       '#L.....#.......#.......#',
@@ -267,6 +289,11 @@ export const LEVELS = [
       { k: 'cart', x: 2, y: 10 }, { k: 'barrel', x: 7, y: 13 },
       { k: 'sacks', x: 16, y: 12 }, { k: 'rubble', x: 17, y: 11 },
       { k: 'sparkle', x: 3, y: 12 }, { k: 'sparkle', x: 20, y: 14 },
+    ],
+    zones: [
+      { x: 11, y: 2, text: 'THE SANCTUM' },
+      { x: 11, y: 7, text: 'GATE YARD' },
+      { x: 11, y: 13, text: 'THE CAUSEWAY' },
     ],
     grid: [
       '########################',

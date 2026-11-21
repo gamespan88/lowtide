@@ -133,6 +133,8 @@ function stageShot(n) {
   const G = world.guards;
   if (n === 1) {
     // L1: a thrown coin pulls a warden off his route; the thief hides at low cover.
+    // A second warden, south by the stores, has half-heard something too — two
+    // speech bubbles in one frame, each warden talking past the other.
     const coin = tileCenter(14, 3);
     world.coinRest = { x: coin.x, y: coin.y };
     world.effects.push({ x: coin.x, y: coin.y, t: 0.3, max: 0.9, kind: 'ping' });
@@ -144,6 +146,8 @@ function stageShot(n) {
     g.say('What was that—?', 99);
     Object.assign(G[0], tileCenter(6, 2)); G[0].facing = 0;
     Object.assign(G[2], tileCenter(12, 14)); G[2].facing = -Math.PI / 2;
+    G[2].state = 'suspicious'; G[2].detection = 0.42;
+    G[2].say("Hm? Who's there?", 99);
     Object.assign(P, tileCenter(19, 3));
     P.stance = 'sneak'; P.facing = Math.PI;
     world.alarm = 1;

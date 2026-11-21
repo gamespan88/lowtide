@@ -195,7 +195,7 @@ export const LEVELS = [
   },
   {
     name: 'The Sunken Vault',
-    prize: 'the Tide Pearl',
+    prize: 'the Drowned Bell',
     par: 135,
     teaser: 'The vault drowned a generation ago. Five wardens and two hounds still guard what the water took.',
     coins: 4,

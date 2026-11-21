@@ -1,4 +1,4 @@
-// main.js — LOWTIDE's boot and campaign: title, four levels, tallies, victory, pause,
+// main.js — LOWTIDE's boot and campaign: title, five levels, tallies, victory, pause,
 // retry, mute — and the staged "shots" mode (?shot=1..4) that poses real mid-action
 // scenes from the game's own state for its screenshots. Nothing here cheats the render:
 // a shot is one ordinary frame of an ordinary World, arranged and frozen.
@@ -71,7 +71,7 @@ function victory() {
     <div class="card">
       <h2>LOWTIDE — the abbey is emptied</h2>
       <p class="tally">Total time <b>${hud.fmtTime(t.time)}</b> · Loot <b>${t.loot}/${t.lootTotal}</b> ·
-      Spotted <b>${t.spotted}</b> · Ghost levels <b>${t.ghostLevels}/4</b></p>
+      Spotted <b>${t.spotted}</b> · Ghost levels <b>${t.ghostLevels}/${LEVELS.length}</b></p>
       <p>The Tide Pearl rides the ebb out of the drowned abbey, and no bell remembers you.</p>
       <p class="prompt">Press Enter to play again.</p>
     </div>`);
@@ -92,7 +92,7 @@ function title() {
   showOverlay(`
     <div class="card">
       <h2>LOWTIDE</h2>
-      <p>A drowned abbey on a tidal flat, four flooded ruins, one thief. Steal each level's
+      <p>A drowned abbey on a tidal flat, five flooded ruins, one thief. Steal each level's
       prize and reach the EXIT unseen — mind the lantern cones, the lamp light, your own
       noise, and the scent hounds that follow your trail across dry stone.</p>
       <p class="tally">WASD / arrows move · Shift sneak · Space sprint · E take ·
@@ -126,7 +126,7 @@ function dropScentPath(w, points, spanSeconds) {
 }
 
 function stageShot(n) {
-  const levelFor = { 1: 0, 2: 1, 3: 2, 4: 3 };
+  const levelFor = { 1: 0, 2: 1, 3: 2, 4: 4 };
   world = new World(levelFor[n], sound);
   world.time = 42;
   const P = world.player;
@@ -202,15 +202,32 @@ function stageShot(n) {
     world.alarm = 2;
     world.spotted = 1;
   } else if (n === 4) {
-    // L4: the Tide Pearl is taken, the exit stands open, the abbey is quiet again.
-    world.time = 96;
-    world.objectiveTaken = true;
-    world.loot[0].taken = true; world.loot[1].taken = true; world.loot[3].taken = true;
-    Object.assign(P, tileCenter(20, 15));
-    P.stance = 'walk'; P.facing = Math.PI / 4;
-    Object.assign(G[2], tileCenter(11, 13)); G[2].facing = Math.PI / 2;
-    Object.assign(G[0], tileCenter(5, 7)); G[0].facing = 0;
-    world.coins = 3;
+    // L5, the Tide Gate: the near miss. The thief freezes at the head of the causeway,
+    // tucked against the low sea wall at the very edge of the causeway warden's cone,
+    // close enough that the lamp light has his meter half-filled — the ring above the
+    // warden's head sits part-way round, his '?' up, one breath from investigate. Two
+    // more wardens sweep the yard behind him, their cones crossing over the hound's
+    // patrol; the gate camera hangs over the tripwired gate, watching the pearl road.
+    world.time = 58;
+    Object.assign(P, tileCenter(10, 11));
+    P.stance = 'sneak'; P.facing = -Math.PI / 2;
+    const g = G[3];
+    Object.assign(g, tileCenter(11, 13));
+    g.state = 'suspicious'; g.detection = 0.5;
+    g.lastSeen = { x: P.x, y: P.y };
+    g.facing = Math.atan2(P.y - g.y, P.x - g.x) + 0.42;
+    g.say('Hm? Who goes—?', 99);
+    const g2 = G[1];
+    Object.assign(g2, tileCenter(6, 7)); g2.facing = 0;
+    const g3 = G[2];
+    Object.assign(g3, tileCenter(18, 8)); g3.facing = Math.PI;
+    Object.assign(G[0], tileCenter(14, 2)); G[0].facing = Math.PI;
+    const h = world.hounds[0];
+    Object.assign(h, tileCenter(12, 8)); h.facing = Math.PI;
+    world.cameras[0].angle = Math.PI / 2;
+    world.cameras[0].exposure = 0.3;
+    world.cameras[1].angle = Math.PI * 0.8;
+    world.alarm = 1;
   }
   drawWorld(ctx, world);
   hud.update(world);

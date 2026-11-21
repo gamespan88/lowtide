@@ -29,6 +29,67 @@ export function drawWorld(ctx, world) {
   drawMarkers(ctx, world);
 }
 
+// A small deterministic hash of a tile (and the level it sits in), so the dressing
+// below — cracks, damp, worn stone — is identical on every frame and every run.
+function tileHash(world, tx, ty) {
+  let h = (tx * 73856093) ^ (ty * 19349663) ^ ((world.levelIndex + 1) * 83492791);
+  h = (h ^ (h >> 13)) * 1274126177;
+  return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+}
+
+// The wear of a drowned abbey, painted into plain floor: hairline cracks, scattered
+// grit and rubble specks, damp patches that darken the stone, and — near the water's
+// reach — a standing puddle's sheen. Purely cosmetic; seeded, so it never flickers.
+function drawFloorWear(ctx, world, tx, ty) {
+  const x = tx * TILE, y = ty * TILE;
+  const h = tileHash(world, tx, ty);
+  const h2 = tileHash(world, tx + 57, ty + 131);
+  if (h < 0.16) {
+    // a crack wandering across the flagstone
+    ctx.strokeStyle = 'rgba(6,8,14,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 4 + h2 * 10, y + 6 + h * 20);
+    ctx.lineTo(x + 15 + h2 * 8, y + 16 + h * 10);
+    ctx.lineTo(x + 26 + h2 * 9, y + 10 + h2 * 18);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(160,175,200,0.10)';
+    ctx.beginPath();
+    ctx.moveTo(x + 4 + h2 * 10, y + 7 + h * 20);
+    ctx.lineTo(x + 15 + h2 * 8, y + 17 + h * 10);
+    ctx.stroke();
+  } else if (h < 0.34) {
+    // grit and small fallen rubble
+    ctx.fillStyle = 'rgba(120,134,160,0.35)';
+    for (let i = 0; i < 3; i++) {
+      const px = x + 6 + ((h * 91 + i * 37) % 28), py = y + 7 + ((h2 * 83 + i * 29) % 26);
+      ctx.beginPath(); ctx.arc(px, py, 1.4 + ((h + i) % 1.3), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(70,82,104,0.5)';
+    ctx.beginPath(); ctx.arc(x + 8 + h2 * 22, y + 9 + h * 20, 2.6, 0, Math.PI * 2); ctx.fill();
+  } else if (h < 0.48) {
+    // a damp patch, darkening toward its heart
+    const g = ctx.createRadialGradient(x + 12 + h2 * 16, y + 12 + h * 14, 2, x + 12 + h2 * 16, y + 12 + h * 14, 17);
+    g.addColorStop(0, 'rgba(5,10,16,0.34)');
+    g.addColorStop(1, 'rgba(5,10,16,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, TILE, TILE);
+  } else if (h < 0.56) {
+    // a shallow puddle: cool sheen with one bright skim of sky
+    ctx.fillStyle = 'rgba(38,84,102,0.55)';
+    ctx.beginPath(); ctx.ellipse(x + 11 + h2 * 17, y + 13 + h * 13, 11.5, 6.5, h * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,220,235,0.28)';
+    ctx.beginPath(); ctx.ellipse(x + 11 + h2 * 17, y + 13 + h * 13, 11.5, 6.5, h * 0.6, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(200,240,250,0.20)';
+    ctx.beginPath(); ctx.ellipse(x + 8 + h2 * 15, y + 11 + h * 12, 5, 2, h * 0.6, 0, Math.PI * 2); ctx.fill();
+  }
+  if (h2 > 0.86) {
+    // a worn path: the centre of the flag polished pale by centuries of feet
+    ctx.fillStyle = 'rgba(190,200,220,0.05)';
+    ctx.beginPath(); ctx.ellipse(x + TILE / 2, y + TILE / 2, 13, 9, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
 function drawTiles(ctx, world) {
   const { level, time } = world;
   for (let ty = 0; ty < ROWS; ty++) for (let tx = 0; tx < COLS; tx++) {
@@ -39,6 +100,7 @@ function drawTiles(ctx, world) {
     ctx.fillRect(x, y, TILE, TILE);
     ctx.strokeStyle = 'rgba(0,0,0,0.16)';
     ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+    if (t === '.') drawFloorWear(ctx, world, tx, ty);
     if (t === '~') {
       ctx.fillStyle = '#14424e';
       ctx.fillRect(x, y, TILE, TILE);
@@ -77,6 +139,20 @@ function drawTiles(ctx, world) {
       ctx.fillRect(x, y, TILE, 5);
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
       ctx.fillRect(x, y + TILE - 5, TILE, 5);
+      // a mason's trim line, and — where the wall meets open floor — tide-moss
+      // creeping up its foot and buttress shading at the corners
+      ctx.fillStyle = 'rgba(140,158,190,0.13)';
+      ctx.fillRect(x, y + 19, TILE, 1.6);
+      if (tileAt(level, tx, ty + 1) !== '#') {
+        const mh = tileHash(world, tx + 311, ty + 97);
+        ctx.fillStyle = `rgba(46,94,66,${0.25 + mh * 0.3})`;
+        ctx.fillRect(x + 2 + mh * 8, y + TILE - 9, 9 + mh * 16, 4);
+        ctx.fillRect(x + 6 + mh * 18, y + TILE - 6, 7 + mh * 10, 2.5);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(x, y + TILE - 3, TILE, 3);
+      }
+      if (tileAt(level, tx - 1, ty) !== '#') { ctx.fillStyle = 'rgba(0,0,0,0.14)'; ctx.fillRect(x, y, 3, TILE); }
+      if (tileAt(level, tx + 1, ty) !== '#') { ctx.fillStyle = 'rgba(0,0,0,0.14)'; ctx.fillRect(x + TILE - 3, y, 3, TILE); }
     } else if (t === 'C') {
       ctx.fillStyle = '#6d4c2f';
       ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
@@ -376,11 +452,116 @@ function propTreasure(ctx, x, y) {
   ctx.closePath(); ctx.fill();
 }
 
+function propBanner(ctx, x, y) {
+  // a hanging banner on a wall face: rod, abbey-red cloth, gold fringe, the pearl sigil
+  ctx.fillStyle = '#2a2016';
+  ctx.fillRect(x + 5, y + 3, TILE - 10, 3);
+  ctx.fillStyle = '#6e2f35';
+  ctx.fillRect(x + 9, y + 6, TILE - 18, 27);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillRect(x + 16, y + 6, 2.5, 27);
+  ctx.fillRect(x + 24, y + 6, 2.5, 27);
+  ctx.fillStyle = '#8a3d44';
+  ctx.fillRect(x + 9, y + 6, TILE - 18, 4);
+  ctx.strokeStyle = '#c9a44e';
+  ctx.lineWidth = 1.4;
+  const cx = x + TILE / 2, cy = y + 16;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 5, cy); ctx.lineTo(cx, cy + 6); ctx.lineTo(cx - 5, cy);
+  ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = '#57d7c5';
+  ctx.beginPath(); ctx.arc(cx, cy, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#c9a44e';
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.moveTo(x + 11 + i * 4.4, y + 33); ctx.lineTo(x + 11 + i * 4.4, y + 36.5); ctx.stroke();
+  }
+  ctx.lineWidth = 1;
+}
+
+function propSconce(ctx, x, y, w, h, world) {
+  // a wall sconce: iron plate and arm, one flame with its own small halo
+  const cx = x + TILE / 2, cy = y + TILE / 2;
+  ctx.fillStyle = '#232830';
+  ctx.fillRect(cx - 2.5, cy - 9, 5, 13);
+  ctx.fillRect(cx - 6, cy + 2, 12, 3);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const flick = 0.85 + 0.15 * Math.sin(world.time * 7 + x * 1.7 + y);
+  const halo = ctx.createRadialGradient(cx, cy - 6, 1, cx, cy - 6, 15 * flick);
+  halo.addColorStop(0, 'rgba(255,205,120,0.5)');
+  halo.addColorStop(1, 'rgba(255,205,120,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(cx - 16, cy - 22, 32, 32);
+  ctx.restore();
+  ctx.fillStyle = '#ffca7a';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 12);
+  ctx.quadraticCurveTo(cx + 3.4, cy - 6, cx, cy - 3.4);
+  ctx.quadraticCurveTo(cx - 3.4, cy - 6, cx, cy - 12);
+  ctx.fill();
+  ctx.fillStyle = '#fff3d0';
+  ctx.beginPath(); ctx.arc(cx, cy - 6, 1.4, 0, Math.PI * 2); ctx.fill();
+}
+
+function propCandle(ctx, x, y, w, h, world) {
+  // a votive cluster: wax stubs of uneven height, each with a lit wick
+  const spots = [[12, 24, 9], [21, 27, 12], [29, 23, 7], [17, 18, 6], [26, 30, 8]];
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(x + 20, y + 29, 14, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const halo = ctx.createRadialGradient(x + 20, y + 20, 2, x + 20, y + 20, 24);
+  halo.addColorStop(0, 'rgba(255,190,100,0.30)');
+  halo.addColorStop(1, 'rgba(255,190,100,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(x - 4, y - 4, TILE + 8, TILE + 8);
+  ctx.restore();
+  for (const [dx, dy, hh] of spots) {
+    ctx.fillStyle = '#ddd3b8';
+    ctx.fillRect(x + dx - 2.4, y + dy - hh, 4.8, hh);
+    ctx.fillStyle = '#b8ab8c';
+    ctx.fillRect(x + dx - 2.4, y + dy - hh, 4.8, 2);
+    const fl = 0.8 + 0.2 * Math.sin(world.time * 9 + dx * 2.1 + dy);
+    ctx.fillStyle = '#ffca7a';
+    ctx.beginPath();
+    ctx.moveTo(x + dx, y + dy - hh - 4.6 * fl);
+    ctx.quadraticCurveTo(x + dx + 2, y + dy - hh - 1, x + dx, y + dy - hh + 0.6);
+    ctx.quadraticCurveTo(x + dx - 2, y + dy - hh - 1, x + dx, y + dy - hh - 4.6 * fl);
+    ctx.fill();
+  }
+}
+
+function propStatue(ctx, x, y) {
+  // a drowned saint on a plinth: stone robe, bowed head, teal patina in the folds
+  const cx = x + TILE / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(cx, y + 35, 14, 3.6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#525f78';
+  ctx.fillRect(cx - 11, y + 28, 22, 7);
+  ctx.fillStyle = '#626f89';
+  ctx.fillRect(cx - 11, y + 28, 22, 2.4);
+  ctx.fillStyle = '#5d6a86';
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, y + 28); ctx.lineTo(cx - 4.5, y + 10); ctx.lineTo(cx + 4.5, y + 10); ctx.lineTo(cx + 8, y + 28);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(87,180,160,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(cx - 6.5, y + 24); ctx.lineTo(cx - 5, y + 14); ctx.lineTo(cx - 2.5, y + 14); ctx.lineTo(cx - 3.8, y + 24);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6d7a96';
+  ctx.beginPath(); ctx.arc(cx, y + 7.5, 4.8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#525f78';
+  ctx.beginPath(); ctx.arc(cx, y + 5.4, 5.4, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,26,38,0.6)';
+  ctx.beginPath(); ctx.moveTo(cx - 4, y + 17); ctx.lineTo(cx + 4, y + 17); ctx.stroke();
+}
+
 const PROP_PAINT = {
   barrel: propBarrel, sacks: propSacks, stack: propStack, shelf: propShelf, cart: propCart,
   bench: propBench, planter: propPlanter, carving: propCarving, rubble: propRubble,
   sparkle: propSparkle, bookcase: propBookcase, table: propTable, lectern: propLectern,
   rug: propRug, altar: propAltar, pew: propPew, bowl: propBowl, treasure: propTreasure,
+  banner: propBanner, sconce: propSconce, candle: propCandle, statue: propStatue,
 };
 
 // A soft vignette: the room edges fall away into deeper shadow so lamp pools and lit

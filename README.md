@@ -6,7 +6,7 @@
 
 An original top-down stealth game for the make.fun **best-stealth-game-20261121-1759** ("Make the best stealth game") bounty. Every place, name, sound and picture in LOWTIDE is invented for this entry and drawn or synthesised by its own code — no external art, no network, no libraries.
 
-You are a tide-thief slipping through a drowned abbey on a tidal flat at night. Cross four flooded ruins — the Causeway Stores, the Flooded Cloister, the Chapter House and the Sunken Vault — lift each level's prize (the abbey's drowned ledgers, and at last the Tide Pearl itself), and reach the exit unseen.
+You are a tide-thief slipping through a drowned abbey on a tidal flat at night. Cross five flooded ruins — the Causeway Stores, the Flooded Cloister, the Chapter House, the Sunken Vault and the Tide Gate — lift each level's prize (the abbey's drowned ledgers, and at last the Tide Pearl itself), and reach the exit unseen.
 
 ## How it plays
 
@@ -15,7 +15,7 @@ You are a tide-thief slipping through a drowned abbey on a tidal flat at night. 
 - **Noise**: sneak (Shift) is silent, walking is quiet, sprinting (Space) is loud — your current noise radius is drawn around you. Click to throw a coin and pull a warden off his route.
 - **Scent hounds** (the abbey's signature defence): moving on dry ground drops scent crumbs that fade over ~18 seconds; wading washes the trail away. A hound that crosses a fresh crumb tracks the chain — drawn as a dashed trail — and its bark spikes its handler's detection.
 - **Cameras** sweep their cones and fill an exposure meter; **laser tripwires** pulse, and crossing one while it is lit raises the alarm.
-- A three-segment alarm (QUIET → WARY → ALARM), strikes for being caught, per-level tallies with a GHOST bonus for never being fully spotted, and a four-level campaign with a victory screen.
+- A three-segment alarm (QUIET → WARY → ALARM), strikes for being caught, per-level tallies with a GHOST bonus for never being fully spotted, and a five-level campaign with a victory screen.
 
 Controls: WASD / arrows move · Shift sneak · Space sprint · E interact · Click throw coin · Esc pause · R retry · M mute.
 
@@ -23,7 +23,7 @@ Controls: WASD / arrows move · Shift sneak · Space sprint · E interact · Cli
 
 - `main.ts` — the hand-in program: copies `game/` and `screenshots/` to the output and writes the dossier.
 - `game/index.html` + `game/css/style.css` — the page and its HUD panel.
-- `game/js/` — one job per file: `main.js` (boot, loop, staged screenshots), `world.js` (level state, alarm, cameras, tripwires), `levels.js` (the four handcrafted maps), `vision.js` (raycasts, line of sight, light), `guards.js` (the warden state machine), `hounds.js` (scent crumbs and tracking), `player.js`, `audio.js` (all-synthesised WebAudio), `hud.js`, `render.js`, `input.js`.
+- `game/js/` — one job per file: `main.js` (boot, loop, staged screenshots), `world.js` (level state, alarm, cameras, tripwires), `levels.js` (the five handcrafted maps), `vision.js` (raycasts, line of sight, light), `guards.js` (the warden state machine), `hounds.js` (scent crumbs and tracking), `player.js`, `audio.js` (all-synthesised WebAudio), `hud.js`, `render.js`, `input.js`.
 - `screenshots/` — four real renders of the game itself, staged mid-action by its own shots mode.
 
 Play it locally: `node serve.ts`, then open http://localhost:8080.
